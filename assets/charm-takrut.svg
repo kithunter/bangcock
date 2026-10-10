@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<defs>
+<path id="t-cord" d="M36 88 C20 60 38 22 64 22 C90 22 106 52 88 76"/>
+</defs>
+<g stroke="#262626" stroke-linejoin="round" stroke-linecap="round">
+<use href="#t-cord" fill="none" stroke-width="12"/><use href="#t-cord" fill="none" stroke="#e03a2e" stroke-width="6.5"/><use href="#t-cord" fill="none" stroke="#ff8f7d" stroke-width="2" transform="translate(-1.5 -1.5)"/>
+<circle cx="64" cy="22" r="8" fill="#e03a2e" stroke-width="5"/><path d="M60 19 q2-3 6-2" fill="none" stroke="#ff8f7d" stroke-width="2.6"/>
+<g transform="translate(62 96) rotate(-14)">
+<rect x="-46" y="-15" width="92" height="30" rx="3" fill="#f7c93a" stroke-width="6"/>
+<rect x="-44" y="3" width="88" height="10" fill="#d99a1c" stroke="none"/>
+<path d="M-36 -13 L-31 13 M-23 -13 L-18 13 M-10 -13 L-5 13 M3 -13 L8 13 M16 -13 L21 13" fill="none" stroke="#b97a14" stroke-width="2.6"/>
+<path d="M-42 -9 H38" fill="none" stroke="#fff0a0" stroke-width="4"/>
+<ellipse cx="46" cy="0" rx="6.5" ry="15" fill="#d99a1c" stroke-width="5"/>
+<ellipse cx="46" cy="0" rx="2.8" ry="8.5" fill="#6a3d08" stroke="none"/>
+<rect x="-34" y="-18" width="11" height="36" rx="2.5" fill="#e03a2e" stroke-width="4.5"/>
+<rect x="17" y="-18" width="11" height="36" rx="2.5" fill="#e03a2e" stroke-width="4.5"/>
+<path d="M-31 -13 V13 M20 -13 V13" fill="none" stroke="#ff8f7d" stroke-width="2"/>
+</g>
+</g>
+</svg>

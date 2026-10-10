@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<defs>
+<path id="y-cloth" d="M20 16 Q64 10 108 16 Q113 48 108 82 L82 112 Q50 116 20 112 Q15 64 20 16Z"/>
+<clipPath id="y-c"><use href="#y-cloth"/></clipPath>
+<path id="y-a" d="M1 9 C1 3 9 2 9 6 C9 9 4 9 4 6"/>
+<path id="y-b" d="M1 3 C5 0 9 2 8 5 C7 8 3 8 3 5 M8 5 L10 10"/>
+<path id="y-g" d="M0 8 L0 2 L9 2 M5 2 L5 9 M5 5 C8 5 10 7 9 9"/>
+<path id="y-d" d="M2 0 C0 4 2 6 5 5 C8 4 9 7 7 10 M5 5 L5 10"/>
+</defs>
+<g transform="rotate(-4 64 64)" stroke-linejoin="round" stroke-linecap="round">
+<use href="#y-cloth" fill="#c8322a" stroke="#262626" stroke-width="3.6"/>
+<g clip-path="url(#y-c)">
+<path d="M14 98 Q64 104 114 98 L114 122 L14 122Z" fill="#a82820"/>
+<path d="M22 21 Q64 15 106 21" fill="none" stroke="#e8624f" stroke-width="5"/>
+<g fill="none" stroke="#ffd75a" stroke-width="2.8">
+<path d="M28 25 Q64 19 100 25 Q104 52 100 80 L80 105 Q50 108 28 105 Q24 64 28 25Z" stroke-dasharray="6 4"/>
+<circle cx="64" cy="64" r="18"/>
+<rect x="52" y="52" width="24" height="24"/><rect x="52" y="52" width="24" height="24" transform="rotate(45 64 64)"/>
+<g stroke-width="2.6"><use href="#y-a" x="35" y="30"/><use href="#y-b" x="51" y="30"/><use href="#y-g" x="67" y="30"/><use href="#y-d" x="83" y="30"/>
+<use href="#y-d" x="35" y="92"/><use href="#y-g" x="51" y="92"/><use href="#y-b" x="67" y="92"/><use href="#y-a" x="83" y="92"/></g>
+</g>
+<g stroke-width="2.6" fill="none" stroke="#ffd75a"><use href="#y-b" x="32" y="58"/><use href="#y-d" x="87" y="58"/></g>
+<circle cx="64" cy="64" r="3.4" fill="#ffd75a"/>
+</g>
+<path d="M108 82 L80 86 L82 112Z" fill="#8f1f1a" stroke="#262626" stroke-width="3.0"/>
+<path d="M104 86 L84 89" fill="none" stroke="#e8624f" stroke-width="3"/>
+<use href="#y-cloth" fill="none" stroke="#262626" stroke-width="3.6"/>
+</g>
+</svg>
