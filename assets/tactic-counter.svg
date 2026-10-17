@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<defs>
+<path id="c-o" d="M20 20 C44 27 84 27 108 20 C112 58 104 90 64 122 C24 90 16 58 20 20Z"/>
+<path id="c-i" d="M31 33 C50 38 78 38 97 33 C100 62 92 84 64 108 C36 84 28 62 31 33Z"/>
+<clipPath id="c-oc"><use href="#c-o"/></clipPath>
+<clipPath id="c-ic"><use href="#c-i"/></clipPath>
+</defs>
+<g stroke="#262626" stroke-linejoin="round" stroke-linecap="round">
+<use href="#c-o" fill="#f7c93a" stroke-width="6"/>
+<path d="M64 20 L112 20 L112 124 L64 124Z" clip-path="url(#c-oc)" fill="#d99a1c" stroke="none"/>
+<use href="#c-i" fill="#2fa56a" stroke-width="4.5"/>
+<path d="M64 30 L102 30 L102 112 L64 112Z" clip-path="url(#c-ic)" fill="#1f7a4d" stroke="none"/>
+<path d="M37 44 C37 58 41 70 48 80" fill="none" stroke="#86e0a8" stroke-width="4.5"/>
+<use href="#c-o" fill="none" stroke-width="6"/>
+<path transform="translate(9.2 14.7) scale(.88)" d="M77 80 L77 48 A11 11 0 0 0 55 48 L55 64 L62.5 64 L49.5 86 L36.5 64 L44 64 L44 48 A22 22 0 0 1 88 48 L88 80Z" fill="#fff3d6" stroke-width="5"/>
+</g>
+</svg>

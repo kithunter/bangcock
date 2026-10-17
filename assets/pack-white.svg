@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 540"><defs>
+<linearGradient id="foil" x2="1"><stop offset="0" stop-color="#8d96a0"/><stop offset=".3" stop-color="#f4f7fa"/><stop offset=".55" stop-color="#b9c1ca"/><stop offset=".8" stop-color="#eef2f6"/><stop offset="1" stop-color="#8d96a0"/></linearGradient>
+<linearGradient id="body" y2="1"><stop offset="0" stop-color="#2f7fd0"/><stop offset="1" stop-color="#1d4f94"/></linearGradient>
+<radialGradient id="glow" cy=".45"><stop offset="0" stop-color="#fff3c4"/><stop offset="1" stop-color="#f5a623"/></radialGradient>
+<pattern id="thai" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#f08a24"/><path d="M12 3l9 9-9 9-9-9z" fill="#ffd23f" stroke="#2b1608" stroke-width="1.5"/><circle cx="12" cy="12" r="2.5" fill="#f08a24"/></pattern>
+<clipPath id="win"><rect x="40" y="84" width="220" height="300" rx="6"/></clipPath>
+</defs>
+<g stroke="#2b1608" stroke-width="5" stroke-linejoin="round">
+<rect x="10" y="52" width="280" height="436" fill="url(#body)"/>
+<rect x="24" y="68" width="252" height="404" rx="10" fill="url(#thai)"/>
+<rect x="40" y="84" width="220" height="300" rx="6" fill="url(#glow)"/>
+<path d="M150 250L470.0 250.0L463.9 312.4ZM150 250L445.6 372.5L416.1 427.8ZM150 250L376.3 476.3L327.8 516.1ZM150 250L272.5 545.6L212.4 563.9ZM150 250L150.0 570.0L87.6 563.9ZM150 250L27.5 545.6L-27.8 516.1ZM150 250L-76.3 476.3L-116.1 427.8ZM150 250L-145.6 372.5L-163.9 312.4ZM150 250L-170.0 250.0L-163.9 187.6ZM150 250L-145.6 127.5L-116.1 72.2ZM150 250L-76.3 23.7L-27.8 -16.1ZM150 250L27.5 -45.6L87.6 -63.9ZM150 250L150.0 -70.0L212.4 -63.9ZM150 250L272.5 -45.6L327.8 -16.1ZM150 250L376.3 23.7L416.1 72.2ZM150 250L445.6 127.5L463.9 187.6Z" fill="#fff" opacity=".4" stroke="none" clip-path="url(#win)"/>
+<path d="M150 150l96 110-96 110-96-110z" fill="#e8501f" opacity=".85" clip-path="url(#win)"/>
+<path d="M150 168l80 92-80 92-80-92z" fill="url(#glow)" stroke-width="3" clip-path="url(#win)"/>
+<rect x="44" y="398" width="212" height="46" rx="8" fill="#1d4f94"/>
+<text x="150" y="430" text-anchor="middle" font-family="Kanit, Thonburi, Tahoma, sans-serif" font-weight="800" font-size="26" fill="#fff6d8" stroke-width="5" paint-order="stroke">ซองการ์ดไก่ชน</text>
+<path d="M0 56 L0 4 L10 11 L20 4 L30 11 L40 4 L50 11 L60 4 L70 11 L80 4 L90 11 L100 4 L110 11 L120 4 L130 11 L140 4 L150 11 L160 4 L170 11 L180 4 L190 11 L200 4 L210 11 L220 4 L230 11 L240 4 L250 11 L260 4 L270 11 L280 4 L290 11 L300 4 L300 56Z" fill="url(#foil)"/>
+<path d="M0 484 L0 536 L10 529 L20 536 L30 529 L40 536 L50 529 L60 536 L70 529 L80 536 L90 529 L100 536 L110 529 L120 536 L130 529 L140 536 L150 529 L160 536 L170 529 L180 536 L190 529 L200 536 L210 529 L220 536 L230 529 L240 536 L250 529 L260 536 L270 529 L280 536 L290 529 L300 536 L300 484Z" fill="url(#foil)"/>
+</g>
+<path d="M10 14V54M20 14V54M30 14V54M40 14V54M50 14V54M60 14V54M70 14V54M80 14V54M90 14V54M100 14V54M110 14V54M120 14V54M130 14V54M140 14V54M150 14V54M160 14V54M170 14V54M180 14V54M190 14V54M200 14V54M210 14V54M220 14V54M230 14V54M240 14V54M250 14V54M260 14V54M270 14V54M280 14V54M290 14V54M10 486V526M20 486V526M30 486V526M40 486V526M50 486V526M60 486V526M70 486V526M80 486V526M90 486V526M100 486V526M110 486V526M120 486V526M130 486V526M140 486V526M150 486V526M160 486V526M170 486V526M180 486V526M190 486V526M200 486V526M210 486V526M220 486V526M230 486V526M240 486V526M250 486V526M260 486V526M270 486V526M280 486V526M290 486V526" stroke="#2b1608" stroke-width="1.5" opacity=".25"/>
+<path d="M70 56h46L46 484H10V380z" fill="#fff" opacity=".12"/>
+</svg>
