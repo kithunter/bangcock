@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<!-- cowrie shell (เบี้ย) -->
+<g transform="rotate(-28 64 64)" stroke="#262626" stroke-linejoin="round" stroke-linecap="round">
+<path id="b" d="M64 14 C98 14 116 40 116 66 C116 92 98 114 64 114 C30 114 12 92 12 66 C12 40 30 14 64 14Z" fill="#f3e3c0" stroke-width="7"/>
+<clipPath id="bc"><path d="M64 14 C98 14 116 40 116 66 C116 92 98 114 64 114 C30 114 12 92 12 66 C12 40 30 14 64 14Z"/></clipPath>
+<g clip-path="url(#bc)" stroke="none"><path d="M10 78 C40 108 90 110 120 70 L120 120 L10 120Z" fill="#d9bf8a"/><g fill="#c49a58"><circle cx="30" cy="40" r="5"/><circle cx="96" cy="34" r="5.5"/><circle cx="26" cy="86" r="4"/><circle cx="100" cy="86" r="4.5"/><circle cx="84" cy="102" r="3.5"/><circle cx="44" cy="100" r="3.5"/></g>
+<path d="M26 38 C34 24 50 20 62 20" fill="none" stroke="#fff" stroke-width="6" stroke-opacity=".9"/></g>
+<!-- toothed slit -->
+<path d="M36 66 C48 54 80 54 92 66 C80 78 48 78 36 66Z" fill="#7a4a1c" stroke-width="5"/>
+<path d="M44 58 v-6 M54 55 v-6 M64 54 v-6 M74 55 v-6 M84 58 v-6 M44 74 v6 M54 77 v6 M64 78 v6 M74 77 v6 M84 74 v6" fill="none" stroke-width="3.6"/>
+</g>
+</svg>
