@@ -1,0 +1,165 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ปั่นเจาะดิน (spike)</title>
+<style>
+  html,body{margin:0;height:100%;background:#120a06;display:grid;place-items:center;overflow:hidden;font-family:sans-serif}
+  canvas{height:100vh;aspect-ratio:720/1280;touch-action:none;display:block}
+</style>
+<canvas id="c" width="720" height="1280"></canvas>
+<script>
+// Throwaway spike: ปั่นเจาะดิน in three lanes, like the coin run (the user, 2026-10-29): the rubbed bird drills down on its own; a swipe
+// moves it a lane (snapped); a mole walks its open tunnel across the lanes and a drill that reaches the tunnel with the mole in its lane
+// is knocked back (a big STAMINA loss, the mole dizzy); a rock layer stops the drill till it's tapped 5–10 times; a gold can sits in one
+// lane of some layers. STAMINA runs down all the while; at nothing the bird topples.
+const A = '/assets/', img = (p) => Object.assign(new Image(), { src: A + p });
+const I = { back: img('encounter/v7.webp'), bird: img('roosters/n06-spin.webp'), card: img('roosters/n06.webp'), can: img('fair/games/can.webp'), gold: img('fair/games/gold.webp'), moleWalk: img('fair/games/mole-walk.webp'), moleBonk: img('fair/games/mole-bonk.webp'), surface: img('fair/games/drill/surface.webp'), under: img('fair/games/drill/under.webp'), rock: img('fair/games/drill/rock.webp'), tunnel: img('fair/games/drill/tunnel.webp'), soil: [1, 2, 3].map((k) => img(`fair/games/drill/soil-${k}.webp`)) };
+const ok = (im) => im.complete && im.naturalWidth > 0;
+const cv = document.getElementById('c'), g = cv.getContext('2d'), W = 720, H = 1280, CX = W / 2;
+const LH = 118, BIRD_Y = 470; // a layer's height; the bird's spot on screen
+const LANE = [W / 6, W / 2, (5 * W) / 6], DRILL = 66, MOLE = 72, REACH = W / 2 - 95; // the lanes' middles; the drill's half-width; the mole's; how far the mole walks
+let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const layers = [];
+function layer(i) {
+  while (layers.length <= i) {
+    const k = layers.length, r = rnd();
+    const kind = k < 3 ? 'dirt' : k % 8 === 7 ? 'rock' : r < 0.38 ? 'mole' : 'dirt';
+    layers.push({ kind, gold: kind === 'dirt' && k > 2 && rnd() < 0.3 ? Math.floor(rnd() * 3) : -1, taps: 0, need: 5 + Math.min(5, Math.floor(k / 12)), x: rnd() * 2 - 1, v: (0.45 + rnd() * 0.35) * (rnd() < 0.5 ? -1 : 1), bonk: 0, hit: false, broke: false });
+  }
+  return layers[i];
+}
+const st = { holding: false, lane: 1, x: LANE[1], at: 0, prog: 0, cam: 0, gauge: 1, t: 0, score: 0, shake: 0, bounce: 0, over: 0, started: false, tapT: 0 };
+const bits = [], pops = [];
+const moleX = (L) => CX + L.x * REACH;
+const inLane = (L) => Math.abs(moleX(L) - st.x) < DRILL + MOLE * 0.8; // the mole in the drill's way
+// a swipe moves a lane, the moment it's long enough; a press that didn't swipe is a tap (on a rock: a knock)
+let down = null;
+const scale = () => W / cv.getBoundingClientRect().width;
+const move = (d) => { if (st.over) return; const l = Math.max(0, Math.min(2, st.lane + d)); if (l !== st.lane) st.lane = l; };
+function tap() {
+  const L = layer(st.at);
+  if (L.kind !== 'rock' || st.prog < 0.3 || st.over) return;
+  L.taps++; st.gauge -= 0.004; st.shake = 0.35; st.tapT = 0.12;
+  if (L.taps >= L.need) breakLayer(L, 'rock');
+}
+cv.onpointerdown = (e) => { if (!st.started) return (st.started = true); down = { x: e.clientX, y: e.clientY, swiped: false }; st.holding = true; cv.setPointerCapture(e.pointerId); }; // held: it drills; let go: it waits
+cv.onpointermove = (e) => { if (!down || down.swiped) return; const dx = (e.clientX - down.x) * scale(), dy = (e.clientY - down.y) * scale(); if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) (down.swiped = true), move(Math.sign(dx)); };
+cv.onpointerup = cv.onpointercancel = () => { if (down && !down.swiped) tap(); down = null; st.holding = false; };
+onkeydown = (e) => { if (!st.started) return (st.started = true); if (e.key === 'ArrowLeft') move(-1); else if (e.key === 'ArrowRight') move(1); else if (e.key === ' ') (st.holding = true), e.repeat || tap(); };
+onkeyup = (e) => e.key === ' ' && (st.holding = false);
+function burst(i, kind) {
+  const y = i * LH;
+  for (const side of [-1, 1]) for (let k = 0; k < 3; k++) bits.push({ x: st.x + side * (40 + k * 40), y, vx: side * (5 + Math.random() * 7), vy: -8 - Math.random() * 9, r: 0, va: side * (0.15 + Math.random() * 0.3), kind });
+}
+let popSide = 1;
+function pop(word, color = '#fff') { pops.push({ word, color, t: 0.8, side: (popSide = -popSide) }); }
+function breakLayer(L, kind) {
+  burst(st.at, kind); L.broke = true;
+  const gold = L.gold >= 0 && L.gold === st.lane;
+  st.score += 1 + (gold ? 10 : 0) + (kind === 'rock' ? 5 : 0);
+  st.shake = kind === 'rock' ? 1 : 0.3;
+  if (gold) pop('+10 ทอง!', '#ffd23a'); else if (kind === 'rock') pop('หินแตก!', '#e8dccb'); else if (Math.random() < 0.3) pop(['โครม!', 'เปรี้ยง!', 'ปั้ก!'][Math.floor(Math.random() * 3)]);
+  st.at++; st.prog = 0;
+}
+function step(dt) {
+  if (!st.started) return;
+  st.t += dt;
+  for (const L of layers) { L.bonk = Math.max(0, L.bonk - dt); if (!L.bonk) (L.x += L.v * dt), Math.abs(L.x) > 1 && ((L.v *= -1), (L.x = Math.sign(L.x))); }
+  st.shake = Math.max(0, st.shake - dt * 3); st.bounce = Math.max(0, st.bounce - dt * 3); st.tapT = Math.max(0, st.tapT - dt);
+  st.x += (LANE[st.lane] - st.x) * Math.min(1, dt * 16); // snapped, sliding there
+  if (st.over) { st.over += dt; return; }
+  const L = layer(st.at), speed = 1.5 + Math.min(1.5, st.at / 60); // layers a second, faster the deeper
+  st.gauge -= dt * (st.holding ? 0.026 : 0.014); // waiting costs too, only less: no waiting forever
+  if (L.kind === 'rock') st.prog = Math.min(0.3, st.prog + dt * speed); // the drill sits on the rock till it's knocked through
+  else if (!st.holding) st.prog = Math.max(0, st.prog - dt * 0.6); // let go: it stops, backing out of the hole it had started
+  else {
+    st.prog += dt * speed;
+    if (L.kind === 'mole' && !L.hit && st.prog > 0.35 && inLane(L)) { // into the tunnel with the mole in the lane
+      L.hit = true; L.bonk = 1.2; st.gauge -= 0.15; st.bounce = 1; st.shake = 1; st.prog = 0; pop('จี๊ด! ชนตุ่น', '#ffd0c0');
+    }
+    if (st.prog >= 1) breakLayer(L, L.kind);
+  }
+  if (st.gauge <= 0) (st.gauge = 0), (st.over = 1e-6);
+  st.cam += (st.at * LH - st.cam) * Math.min(1, dt * 10);
+  for (const b of bits) (b.vy += 0.9), (b.x += b.vx), (b.y += b.vy), (b.r += b.va);
+}
+function draw() {
+  g.save();
+  if (st.shake) g.translate((Math.random() - 0.5) * 20 * st.shake, (Math.random() - 0.5) * 14 * st.shake);
+  const top = BIRD_Y - st.cam;
+  // behind it all, the underground wall (Codex's under.webp, tiled downward, drifting a little slower than the earth: depth); above ground, the fair
+  g.fillStyle = '#2a170c'; g.fillRect(0, 0, W, H);
+  if (ok(I.under)) { const off = ((st.cam * 0.85) % H + H) % H; for (let y = top + 20 - off; y < H; y += H) if (y + H > 0) g.drawImage(I.under, 0, Math.max(y, top + 20)); }
+  if (ok(I.surface)) g.drawImage(I.surface, 0, top - 560 + 90); else { g.drawImage(I.back, 0, 0, 941, 1672, 0, top - H + 90, W, H); }
+  const first = Math.max(0, Math.floor((st.cam - BIRD_Y) / LH) - 1);
+  for (let i = first; i < first + 14; i++) {
+    const L = layer(i), y = top + i * LH;
+    if (L.broke || y > H + LH) continue;
+    soil(i, y, L, i === st.at ? st.prog : 0);
+    if (L.kind === 'mole') {
+      tunnel(y);
+      if (i === st.at || i === st.at + 1) { const bad = inLane(L); g.fillStyle = bad ? 'rgba(230,40,30,.35)' : 'rgba(80,220,90,.22)'; g.fillRect(st.x - DRILL, y + 22, DRILL * 2, LH - 44); }
+      mole(moleX(L), y + LH - 20, Math.sign(L.v), L.bonk);
+    }
+  }
+  // the lanes: faint guides, and the drill's own path brighter
+  g.setLineDash([14, 14]); g.lineWidth = 3;
+  for (const lx of [W / 3, (2 * W) / 3]) { g.strokeStyle = 'rgba(255,243,214,.18)'; g.beginPath(); g.moveTo(lx, BIRD_Y + 30); g.lineTo(lx, H); g.stroke(); }
+  g.strokeStyle = 'rgba(255,243,214,.75)'; g.lineWidth = 4; for (const dx of [-DRILL, DRILL]) { g.beginPath(); g.moveTo(st.x + dx, BIRD_Y + 30); g.lineTo(st.x + dx, H); g.stroke(); }
+  g.setLineDash([]);
+  // the bird, spinning in its lane
+  const by = BIRD_Y + 22 + st.prog * 40 - st.bounce * 70, f = Math.floor(st.t * (6 + 20 * st.gauge)) % 3, w = 220, h = w * 404 / 344;
+  g.save(); g.translate(st.x + (st.holding ? (Math.random() - 0.5) * 6 : 0), by);
+  if (st.gauge < 0.25 && !st.over) { const k = 1 - st.gauge / 0.25; g.rotate(Math.sin(st.t * (10 + 10 * k)) * 0.2 * k); }
+  if (st.over) { const e = Math.min(1, st.over / 0.6); g.translate(h * 0.42 * e, 0); g.rotate(-Math.PI / 2 * e); }
+  if (!st.over || st.over < 0.45) { g.globalAlpha = st.over ? 1 - st.over / 0.45 : 1; g.drawImage(I.bird, f * 344, 0, 344, 404, -w / 2, -h * 0.92, w, h); }
+  if (st.over) { g.globalAlpha = Math.min(1, st.over / 0.45); const cw = w * 0.95; g.drawImage(I.card, -cw / 2 + 12, -h * 0.92 + (h - cw) / 2, cw, cw); }
+  g.restore();
+  if (st.holding && !st.over) for (let k = 0; k < 5; k++) { g.fillStyle = Math.random() < 0.5 ? '#fff3b0' : '#ffb14a'; g.fillRect(st.x + (Math.random() - 0.5) * 110, BIRD_Y + 20 + Math.random() * 30, 6, 6); }
+  for (const b of bits) { const y = b.y - st.cam + BIRD_Y; if (y > H + 200) continue; g.save(); g.translate(b.x, y); g.rotate(b.r); if (b.kind === 'rock') { g.fillStyle = '#8d8a84'; g.beginPath(); g.moveTo(-30, -18); g.lineTo(28, -22); g.lineTo(36, 14); g.lineTo(-24, 22); g.closePath(); g.fill(); } else { g.fillStyle = '#a8683a'; g.strokeStyle = '#2b1608'; g.lineWidth = 3; g.beginPath(); g.ellipse(0, 0, 30, 21, 0, 0, 7); g.fill(); g.stroke(); g.fillStyle = '#c98a52'; g.beginPath(); g.ellipse(-8, -6, 14, 9, 0, 0, 7); g.fill(); } g.restore(); }
+  g.restore();
+  // HUD
+  bar(170, st.gauge, ['#fff07a', '#f2b800'], `STAMINA ${Math.round(st.gauge * 100)}`);
+  txtc(`${st.score} คะแนน`, CX, 120, 56, '#ffd23a');
+  const L0 = layer(st.at);
+  if (L0.kind === 'rock' && st.prog >= 0.3 && !st.over) txtc(`เคาะหิน! ${L0.need - L0.taps}`, CX, 290, 60 + (st.tapT ? 8 : 0), '#fff3d6', '#5a2a0c');
+  for (const p of pops) { p.t -= 1 / 60; txtc(p.word, Math.max(140, Math.min(W - 140, st.x + p.side * 190)), BIRD_Y - 90 - (0.8 - p.t) * 90, 50, p.color, '#b8261f'); }
+  pops.splice(0, pops.length, ...pops.filter((p) => p.t > 0));
+  if (!st.started) txtc('แตะเพื่อเริ่ม', CX, 1150, 40, '#fff3d6');
+  else if (st.t < 6) (txtc('กดค้าง = เจาะ · ปล่อย = รอตุ่น', CX, 1100, 34, '#fff3d6'), txtc('ปัดซ้าย-ขวา = ย้ายเลน', CX, 1150, 34, '#fff3d6'), txtc('เจอหิน = แตะจอรัว ๆ', CX, 1200, 34, '#ffb14a'));
+  if (st.over > 0.8) txtc(`หมดแรง! ${st.score} คะแนน · ${st.at} ชั้น`, CX, 700, 50, '#fff3d6');
+}
+// a layer of earth the whole width, darker the deeper; a buried can (gold: a gold one, in its lane); rock: stones packed tight, cracking as they're knocked
+function soil(i, y, L, dent) {
+  const d = Math.min(1, i / 80), shade = (a, b) => `rgb(${Math.round(a[0] + (b[0] - a[0]) * d)},${Math.round(a[1] + (b[1] - a[1]) * d)},${Math.round(a[2] + (b[2] - a[2]) * d)})`;
+  // Codex's layers (art/drill): rock, a mole's tunnel, or one of three soils; darker the deeper
+  const art = L.kind === 'rock' ? I.rock : L.kind === 'mole' ? I.tunnel : I.soil[(i * 7) % 3];
+  if (ok(art)) g.drawImage(art, 0, y); else ((g.fillStyle = shade([170, 108, 55], [88, 54, 37])), g.fillRect(0, y, W, LH));
+  if (d > 0) ((g.fillStyle = `rgba(20,8,2,${(d * 0.45).toFixed(2)})`), g.fillRect(0, y, W, LH));
+  if (L.kind === 'rock') rock(y, i, L.taps / L.need);
+  else if (L.gold >= 0) { g.save(); g.translate(LANE[L.gold], y + LH / 2); g.rotate(((i * 37) % 40 - 20) * Math.PI / 180); g.drawImage(I.gold, -52, -52, 104, 104); g.restore(); }
+  else if (L.kind === 'dirt' && i % 3 === 1) { g.save(); g.translate(60 + ((i * 53) % (W - 120)), y + LH / 2); g.rotate(((i * 37) % 60 - 30) * Math.PI / 180); g.drawImage(I.can, -45, -45, 90, 90); g.restore(); }
+  if (dent) { g.fillStyle = 'rgba(30,15,5,.6)'; g.beginPath(); g.ellipse(st.x, y + 4, 60 * dent + 12, 22 * dent + 6, 0, 0, 7); g.fill(); }
+}
+function rock(y, i, crack) {
+  // cracks spreading out from the drill as it's knocked
+  g.strokeStyle = 'rgba(30,26,22,.85)'; g.lineWidth = 4; const n = Math.ceil(crack * 8);
+  for (let k = 0; k < n; k++) { const a = (k / 8) * Math.PI * 2 + i, r = 40 + crack * 160; g.beginPath(); g.moveTo(st.x, y + LH / 2); g.lineTo(st.x + Math.cos(a) * r * 0.5, y + LH / 2 + Math.sin(a) * 18); g.lineTo(st.x + Math.cos(a) * r, y + LH / 2 + Math.sin(a) * 34); g.stroke(); }
+}
+// the mole's open tunnel across the whole layer, and the mole (Codex's, art/mole): a 4-frame walk, or dizzy when the drill caught it
+function tunnel(y) {} // the tunnel is in its layer's art now
+const WALK = [0, 1, 3, 1];
+function mole(x, y, dir, bonk) {
+  const im = bonk ? I.moleBonk : I.moleWalk, f = bonk ? 0 : WALK[Math.floor(st.t * 6) % 4], w = 190, h = w * 240 / 320; // a stride, the legs gathered, the other stride, gathered again: frames 0, 2 and 3 are all strides alike, played in a row they stuttered
+  if (!im.complete || !im.naturalWidth) return;
+  g.save(); g.translate(x, y); g.scale(dir || 1, 1); g.drawImage(im, f * 320, 0, 320, 240, -w / 2, -h * 0.97, w, h); g.restore();
+}
+function bar(y, v, col, label) {
+  g.fillStyle = '#1b1009'; rr(60, y, 600, 40, 10); g.fill(); g.strokeStyle = '#3a1d0c'; g.lineWidth = 6; rr(60, y, 600, 40, 10); g.stroke();
+  const gr = g.createLinearGradient(0, y, 0, y + 40); gr.addColorStop(0, col[0]); gr.addColorStop(1, col[1]); g.fillStyle = gr; rr(66, y + 6, 588 * Math.max(0, v), 28, 6); g.fill();
+  g.font = '900 24px sans-serif'; g.textAlign = 'left'; g.lineWidth = 4; g.strokeStyle = '#3a1d0c'; g.strokeText(label, 80, y + 29); g.fillStyle = '#fff3d6'; g.fillText(label, 80, y + 29);
+}
+function rr(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, Math.max(0, w), h, r); }
+function txtc(s, x, y, size, fill, stroke = '#3a1d0c') { g.font = `900 ${size}px sans-serif`; g.textAlign = 'center'; g.lineWidth = size / 6; g.strokeStyle = stroke; g.strokeText(s, x, y); g.fillStyle = fill; g.fillText(s, x, y); }
+let last = performance.now(), acc = 0;
+(function loop(now) { acc += Math.min(0.25, (now - last) / 1000); last = now; while (acc >= 1 / 60) { step(1 / 60); acc -= 1 / 60; } draw(); requestAnimationFrame(loop); })(last);
+</script>

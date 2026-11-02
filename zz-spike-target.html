@@ -1,0 +1,168 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ไก่ชนเป้า (spike)</title>
+<style>
+  html,body{margin:0;height:100%;background:#120a06;display:grid;place-items:center;overflow:hidden;font-family:sans-serif}
+  canvas{height:100vh;aspect-ratio:720/1280;touch-action:none;display:block}
+</style>
+<canvas id="c" width="720" height="1280"></canvas>
+<script>
+// Throwaway spike: ไก่ชนเป้า, take 3 (the user, 2026-10-30: the camera always behind the bird, the floor turning under it, like the old
+// console kart racers' tilted floor). The floor is drawn a row at a time from the pit's top-down picture (stall-back), seen from just behind
+// and above the bird along the way it faces; the fair turns past on the horizon. Flick: the swipe's start is the way it goes (up the
+// screen: straight on), its bend the way it curves, its pace how hard; the camera swings round behind it. It stops where it stops: the next
+// flick goes from there. Targets wander the pit; posts stand in it; the rim throws it back in.
+const A = '/assets/', img = (p) => Object.assign(new Image(), { src: A + p });
+const I = { pit: img('fair/games/stall-back.webp'), sky: img('fair/games/drill/surface.webp'), bird: img('roosters/n06-spin.webp'), card: img('roosters/n06.webp'), post: img('fair/games/post.webp'), lantern: img('fair/games/run-lantern.webp'), gold: img('fair/games/coin-gold.webp'), doll: img('fair/games/doll.webp') };
+const ok = (im) => im.complete && im.naturalWidth > 0;
+const cv = document.getElementById('c'), g = cv.getContext('2d'), W = 720, H = 1280, CX = W / 2;
+const canvas = (w, h) => Object.assign(document.createElement('canvas'), { width: w, height: h });
+// ---- the camera: BACK pit units behind the bird along its heading; a row y below the horizon HOR is the floor at distance KY / (y − HOR)
+const HOR = 520, KY = 260, KX = 520, BACK = 0.55;
+// the floor's picture: the pit on stall-back (stage px) — its centre and radii are the pit's unit circle
+const PIT = { cx: 355, cy: 673, rx: 309, ry: 237 };
+let tex = null;
+const FW = 240, FH = 254, floor = canvas(FW, FH), fg = floor.getContext('2d'), fimg = fg.createImageData(FW, FH); // the floor at a third of the screen, scaled up
+function bake() { const c = canvas(720, 1280), x = c.getContext('2d'); x.drawImage(I.pit, 0, 0, 720, 1280); tex = x.getImageData(0, 0, 720, 1280).data; }
+const st = { x: 0, y: -0.6, vx: 0, vy: 0, turn: 0, head: Math.PI / 2, cam: Math.PI / 2, flying: false, gauge: 1, score: 0, t: 0, over: 0, shake: 0, flicks: 0, started: false };
+let seed = 5; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const BR = 0.1, posts = [{ x: -0.45, y: 0.05 }, { x: 0.45, y: 0.15 }, { x: 0.05, y: 0.45 }];
+const targets = [], pops = [], sparks = [];
+function spawn() {
+  const k = rnd(), kind = k < 0.12 ? 'gold' : k < 0.45 ? 'doll' : 'lantern', a = rnd() * Math.PI * 2, r = 0.2 + rnd() * 0.65;
+  const t = { kind, x: Math.cos(a) * r, y: Math.sin(a) * r, vx: (rnd() - 0.5) * 0.4, vy: (rnd() - 0.5) * 0.4, r: kind === 'gold' ? 0.06 : 0.08 };
+  if (Math.hypot(t.x - st.x, t.y - st.y) > 0.35) targets.push(t);
+}
+for (let i = 0; i < 20 && targets.length < 6; i++) spawn();
+// ---- the view: a point in the pit as seen from behind the bird
+const view = () => { const c = Math.cos(st.cam), s = Math.sin(st.cam); return { ex: st.x - c * BACK, ey: st.y - s * BACK, fx: c, fy: s, rx: s, ry: -c }; }; // eye; forward; right
+function proj(V, x, y) { const dx = x - V.ex, dy = y - V.ey, f = dx * V.fx + dy * V.fy, r = dx * V.rx + dy * V.ry; return f < 0.05 ? null : { x: CX + (r * KX) / f, y: HOR + KY / f, k: BACK / f }; }
+// ---- the flick and its blade trail
+let path = null, down = false; const blade = [];
+const stage = (e) => { const r = cv.getBoundingClientRect(); return { x: ((e.clientX - r.left) * W) / r.width, y: ((e.clientY - r.top) * H) / r.height, t: performance.now() }; };
+cv.onpointerdown = (e) => { if (!st.started) return (st.started = true); down = true; const p = stage(e); blade.length = 0; blade.push(p); if (st.flying || st.over) return; path = [p]; cv.setPointerCapture(e.pointerId); };
+cv.onpointermove = (e) => { if (!down) return; const p = stage(e); if (path) path.push(p); blade.push(p); };
+cv.onpointerup = cv.onpointercancel = () => { down = false; if (path) flick(path); path = null; };
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+function flick(p) {
+  if (p.length < 4) return;
+  let len = 0; for (let i = 1; i < p.length; i++) len += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
+  if (len < 70) return;
+  const at = (f) => p[Math.min(p.length - 1, Math.round(f * (p.length - 1)))];
+  const a0 = at(0), a1 = at(0.35), b0 = at(0.65), b1 = p[p.length - 1];
+  const s0 = Math.atan2(-(a1.y - a0.y), a1.x - a0.x), s1 = Math.atan2(-(b1.y - b0.y), b1.x - b0.x); // screen angles, up = +90°
+  const head = st.cam - (s0 - Math.PI / 2), bend = Math.max(-1.4, Math.min(1.4, wrap(s1 - s0))); // straight up the screen: the way the camera looks; right of it: the bird's right
+  const secs = Math.max(0.06, (b1.t - a0.t) / 1000), pace = Math.min(1, len / secs / 2600), speed = 1.1 + 1.9 * pace;
+  st.vx = Math.cos(head) * speed; st.vy = Math.sin(head) * speed; st.turn = bend * 2.2; st.flying = true; st.flicks++; st.gauge -= 0.05;
+}
+function step(dt) {
+  if (!st.started) return;
+  st.t += dt; st.shake = Math.max(0, st.shake - dt * 3);
+  for (const t of targets) {
+    t.vx += (rnd() - 0.5) * dt * 0.8; t.vy += (rnd() - 0.5) * dt * 0.8;
+    const sp = Math.hypot(t.vx, t.vy); if (sp > 0.3) (t.vx *= 0.3 / sp), (t.vy *= 0.3 / sp);
+    t.x += t.vx * dt; t.y += t.vy * dt;
+    const d = Math.hypot(t.x, t.y); if (d > 0.85) (t.x *= 0.85 / d), (t.y *= 0.85 / d), (t.vx *= -1), (t.vy *= -1);
+  }
+  for (let i = targets.length - 1; i >= 0; i--) if (targets[i].dead) targets.splice(i, 1);
+  if (targets.length < 6 && rnd() < dt * 1.5) spawn();
+  // the camera swings round behind the way the bird goes (and stays that way once it stops)
+  if (st.flying) st.head = Math.atan2(st.vy, st.vx);
+  st.cam += wrap(st.head - st.cam) * Math.min(1, dt * (st.flying ? 3.5 : 2));
+  if (st.over) { st.over += dt; return; }
+  st.gauge -= dt * 0.012;
+  if (st.flying) {
+    const sp = Math.hypot(st.vx, st.vy), h = Math.atan2(st.vy, st.vx) + st.turn * dt, ns = sp * Math.pow(0.5, dt);
+    st.vx = Math.cos(h) * ns; st.vy = Math.sin(h) * ns; st.x += st.vx * dt; st.y += st.vy * dt;
+    const d = Math.hypot(st.x, st.y), lim = 1 - BR;
+    if (d > lim) { const nx = st.x / d, ny = st.y / d, vn = st.vx * nx + st.vy * ny; if (vn > 0) (st.vx -= 1.75 * vn * nx), (st.vy -= 1.75 * vn * ny), (st.turn *= 0.5), (st.shake = 0.35); st.x = nx * lim; st.y = ny * lim; }
+    for (const p of posts) {
+      const dx = st.x - p.x, dy = st.y - p.y, dd = Math.hypot(dx, dy), m = BR + 0.06;
+      if (dd >= m) continue;
+      const nx = dx / dd, ny = dy / dd, vn = st.vx * nx + st.vy * ny;
+      if (vn < 0) (st.vx -= 1.8 * vn * nx), (st.vy -= 1.8 * vn * ny);
+      st.x = p.x + nx * m; st.y = p.y + ny * m;
+      if (st.t - (p.at ?? -9) > 0.4) (p.at = st.t), (st.gauge -= 0.04), (st.shake = 0.8), pop('โป๊ก!', '#ffd0c0', p.x, p.y);
+    }
+    for (const t of targets) if (!t.dead && Math.hypot(st.x - t.x, st.y - t.y) < BR + t.r) {
+      t.dead = true; const pts = t.kind === 'gold' ? 10 : t.kind === 'doll' ? 3 : 1; st.score += pts; st.shake = 0.5;
+      pop(t.kind === 'gold' ? '+10 ทอง!' : `+${pts}`, t.kind === 'gold' ? '#ffd23a' : '#fff3d6', t.x, t.y);
+      for (let k = 0; k < 12; k++) sparks.push({ x: CX + (Math.random() - 0.5) * 40, y: 900, vx: (Math.random() - 0.5) * 800, vy: -Math.random() * 700, a: 1 });
+    }
+    if (ns < 0.2) st.flying = false; // it stops where it stops: the next flick goes from here
+  }
+  if (st.gauge <= 0) (st.gauge = 0), (st.over = 1e-6);
+  for (const s of sparks) (s.vy += 1500 * dt), (s.x += s.vx * dt), (s.y += s.vy * dt), (s.a -= dt * 1.8);
+  for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].a <= 0) sparks.splice(i, 1);
+}
+function pop(word, color, x, y) { pops.push({ word, color, x, y, t: 0.8 }); }
+// ---- the floor, a row at a time: each row's distance, then along it the pit's picture where that floor point is (off the picture: ground)
+function drawFloor(V) {
+  const d = fimg.data, sy = (H - HOR) / FH, sx = W / FW;
+  for (let j = 0; j < FH; j++) {
+    const f = KY / ((j + 0.5) * sy), bx = V.ex + V.fx * f, by = V.ey + V.fy * f, k = f / KX, fog = Math.min(1, f / 3.5) * 0.45;
+    for (let i = 0; i < FW; i++) {
+      const r = ((i + 0.5) * sx - CX) * k, wx = bx + V.rx * r, wy = by + V.ry * r, o = (j * FW + i) * 4;
+      const tx = Math.round(PIT.cx + wx * PIT.rx), ty = Math.round(PIT.cy - wy * PIT.ry);
+      let R = 150, G = 92, B = 40;
+      if (tex && tx >= 0 && tx < 720 && ty >= 0 && ty < 1280) { const s = (ty * 720 + tx) * 4; R = tex[s]; G = tex[s + 1]; B = tex[s + 2]; }
+      d[o] = R * (1 - fog) + 40 * fog; d[o + 1] = G * (1 - fog) + 20 * fog; d[o + 2] = B * (1 - fog) + 40 * fog; d[o + 3] = 255; // far: into the night
+    }
+  }
+  fg.putImageData(fimg, 0, 0);
+  g.imageSmoothingEnabled = true;
+  g.drawImage(floor, 0, HOR, W, H - HOR);
+}
+function draw() {
+  if (!tex && ok(I.pit)) bake();
+  const V = view();
+  g.save();
+  if (st.shake) g.translate((Math.random() - 0.5) * 18 * st.shake, (Math.random() - 0.5) * 12 * st.shake);
+  // the fair on the horizon, turning with the camera (the picture tiled, every other one mirrored)
+  g.fillStyle = '#2a1840'; g.fillRect(0, 0, W, HOR);
+  if (ok(I.sky)) { const span = 1440, off = ((((st.cam / (Math.PI * 2)) * span * 2) % span) + span) % span; for (let x = -off; x < W; x += span) { g.drawImage(I.sky, 0, 0, 720, 470, x, HOR - 470, 720, 470); g.save(); g.translate(x + span, 0); g.scale(-1, 1); g.drawImage(I.sky, 0, 0, 720, 470, 0, HOR - 470, 720, 470); g.restore(); } }
+  drawFloor(V);
+  const things = [...posts.map((p) => ({ ...p, kind: 'post' })), ...targets, { kind: 'bird', x: st.x, y: st.y }].map((o) => ({ o, p: proj(V, o.x, o.y) })).filter((e) => e.p && e.p.y > HOR).sort((a, b) => a.p.y - b.p.y);
+  for (const { o, p } of things) {
+    const k = p.k * 2.2;
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(p.x, p.y, 46 * k, 14 * k, 0, 0, 7); g.fill();
+    if (o.kind === 'post' && ok(I.post)) g.drawImage(I.post, p.x - 40 * k, p.y - 105 * k, 80 * k, 110 * k);
+    else if (o.kind === 'lantern' && ok(I.lantern)) g.drawImage(I.lantern, p.x - 40 * k, p.y - 130 * k + Math.sin(st.t * 3 + o.x * 9) * 6 * k, 80 * k, 104 * k);
+    else if (o.kind === 'doll' && ok(I.doll)) g.drawImage(I.doll, p.x - 48 * k, p.y - 120 * k, 96 * k, 120 * k);
+    else if (o.kind === 'gold' && ok(I.gold)) g.drawImage(I.gold, p.x - 36 * k, p.y - 90 * k + Math.sin(st.t * 4) * 6 * k, 72 * k, 72 * k);
+    else if (o.kind === 'bird') {
+      const f = Math.floor(st.t * (8 + 18 * st.gauge)) % 3, w = 300, h = (w * 404) / 344;
+      g.save(); g.translate(p.x, p.y);
+      if (st.over) g.rotate((-Math.PI / 2) * Math.min(1, st.over / 0.6));
+      if (!st.over || st.over < 0.45) { g.globalAlpha = st.over ? 1 - st.over / 0.45 : 1; if (ok(I.bird)) g.drawImage(I.bird, f * 344, 0, 344, 404, -w / 2, -h * 0.92, w, h); }
+      if (st.over && ok(I.card)) { g.globalAlpha = Math.min(1, st.over / 0.45); g.drawImage(I.card, -w / 2, -h * 0.92, w, w); }
+      g.restore();
+    }
+  }
+  for (const s of sparks) (g.globalAlpha = Math.max(0, s.a)), (g.fillStyle = '#ffd23a'), g.fillRect(s.x - 5, s.y - 5, 10, 10);
+  g.globalAlpha = 1;
+  g.restore();
+  const now = performance.now(); while (blade.length && now - blade[0].t > 250) blade.shift();
+  g.lineCap = 'round';
+  for (let pass = 0; pass < 2; pass++) for (let i = 1; i < blade.length; i++) {
+    const a = blade[i - 1], b = blade[i], life = Math.max(0, 1 - (now - b.t) / 250), w = (pass ? 8 : 26) * Math.max(0.15, life) * (0.3 + (0.7 * i) / blade.length);
+    g.strokeStyle = pass ? `rgba(255,255,255,${life})` : `rgba(255,190,60,${0.6 * life})`; g.lineWidth = w; g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+  }
+  bar(170, st.gauge, `STAMINA ${Math.round(st.gauge * 100)}`);
+  txtc(`${st.score} คะแนน`, CX, 120, 56, '#ffd23a');
+  for (const p of pops) { p.t -= 1 / 60; const s = proj(V, p.x, p.y); if (s) txtc(p.word, s.x, s.y - 200 * s.k - (0.8 - p.t) * 80, 46, p.color, '#b8261f'); }
+  pops.splice(0, pops.length, ...pops.filter((p) => p.t > 0));
+  if (!st.started) txtc('แตะเพื่อเริ่ม', CX, 1220, 40, '#fff3d6');
+  else if (st.flicks < 2 && !st.flying) (txtc('ตวัดนิ้วไปทางเป้า', CX, 1200, 36, '#fff3d6'), txtc('ตวัดโค้ง = ไก่เลี้ยวโค้ง', CX, 1246, 36, '#ffb14a'));
+  if (st.over > 0.8) txtc(`หมดแรง! ${st.score} คะแนน`, CX, 640, 54, '#fff3d6');
+}
+function bar(y, v, label) {
+  g.fillStyle = '#1b1009'; rr(60, y, 600, 40, 10); g.fill(); g.strokeStyle = '#3a1d0c'; g.lineWidth = 6; rr(60, y, 600, 40, 10); g.stroke();
+  const gr = g.createLinearGradient(0, y, 0, y + 40); gr.addColorStop(0, '#fff07a'); gr.addColorStop(1, '#f2b800'); g.fillStyle = gr; rr(66, y + 6, 588 * Math.max(0, v), 28, 6); g.fill();
+  g.font = '900 24px sans-serif'; g.textAlign = 'left'; g.lineWidth = 4; g.strokeStyle = '#3a1d0c'; g.strokeText(label, 80, y + 29); g.fillStyle = '#fff3d6'; g.fillText(label, 80, y + 29);
+}
+function rr(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, Math.max(0, w), h, r); }
+function txtc(s, x, y, size, fill, stroke = '#3a1d0c') { g.font = `900 ${size}px sans-serif`; g.textAlign = 'center'; g.lineWidth = size / 6; g.strokeStyle = stroke; g.strokeText(s, x, y); g.fillStyle = fill; g.fillText(s, x, y); }
+let last = performance.now(), acc = 0, ms = 0, frames = 0;
+(function loop(now) { acc += Math.min(0.25, (now - last) / 1000); last = now; while (acc >= 1 / 60) { step(1 / 60); acc -= 1 / 60; } const t0 = performance.now(); draw(); ms += performance.now() - t0; frames++; window.__drawMs = ms / frames; requestAnimationFrame(loop); })(last);
+</script>
