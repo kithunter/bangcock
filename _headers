@@ -1,0 +1,7 @@
+# Cloudflare static assets (bangcock.playxkit.com): how long a phone keeps a file (the user, 2026-11-03: the map loaded slowly — every image
+# was re-asked of the server on every view, max-age=0). One rule (two matching rules would join their headers): everything under /assets
+# an hour without asking, then shown at once from the phone and checked in the background for a day, so a redrawn picture (they keep
+# their names) shows by the next visit; the build's own files are new names each build anyway. The page itself (index.html) keeps the
+# default — always fresh, so a new build is seen at once.
+/assets/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>BangCock</title>
+<style>body{color:#fbe9c4;text-align:center;background:#2a1a0e;place-items:center;min-height:100vh;margin:0;font:18px/1.5 system-ui,sans-serif;display:grid}a{color:#2a1a0e;background:#f2b134;border-radius:12px;margin-top:16px;padding:12px 24px;font-weight:700;text-decoration:none;display:inline-block}</style>
+</head>
+<body>
+<!-- The app's way back from LINE / Google / Facebook (spec docs/superpowers/specs/2026-11-16-mobile-app-design.md §3): the tokens in this
+     address go on to the app as bangcock://auth; the button is there if the browser wants a tap first. -->
+<main>
+  <p>กำลังกลับเข้าเกม…<br><small>Returning to the game…</small></p>
+  <a id="go" href="#">กลับเข้าเกม / Back to the game</a>
+</main>
+<script>
+  var to = 'bangcock://auth' + location.search + location.hash;
+  document.getElementById('go').href = to;
+  location.replace(to);
+</script>
+</body>
+</html>
